@@ -1,0 +1,6 @@
+FROM scratch
+
+ADD main /
+ENV WISDOM_CLIENT_SERVER_ADDR=localhost:5678
+ENV WISDOM_CLIENT_WORKERS_NUM=10
+CMD ["/main c"]

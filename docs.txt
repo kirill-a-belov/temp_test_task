@@ -1,0 +1,19 @@
+1. Task:
+
+Test task for Server Engineer
+
+Design and implement “Word of Wisdom” tcp server.
+ • TCP server should be protected from DDOS attacks with the Proof of Work (https://en.wikipedia.org/wiki/Proof_of_work), the challenge-response protocol should be used.
+ • The choice of the POW algorithm should be explained.
+ • After Proof Of Work verification, server should send one of the quotes from “word of wisdom” book or any other collection of the quotes.
+ • Docker file should be provided both for the server and for the client that solves the POW challenge
+
+2. POW algorithm selection:
+DDoS POW algorithm demands:
+    - CPU calculation. (May have clients with low hardware, without GPU, etc.)
+    - Fast for single (small amount) queries - should not decrease TTFB.
+    - Reduced time for researching (Need to chose after 1h search).
+
+Results: Due to lack of knowledge and time limitation, I selected SHA256 calculation cause it used in common projects.
+Assume that necessary researches already has been made, and it was selected as the best.
+TODO (KB): Additional researches for alternative algorithms.
