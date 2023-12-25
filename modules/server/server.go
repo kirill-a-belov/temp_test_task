@@ -160,11 +160,12 @@ func (s *Server) serv(ctx context.Context, conn net.Conn) error {
 		return errors.Errorf("client welcome request: received wrong message (%s)", clientWelcomeRequest)
 	}
 
+	sendingPrefix := rand.Int63()
 	serverQuestionResponse, err := json.Marshal(protocol.ServerQuestionRequest{
 		Message: protocol.Message{
 			Type: protocol.MessageTypeServerQuestion,
 		},
-		Prefix:     rand.Int63(),
+		Prefix:     sendingPrefix,
 		Difficulty: s.config.difficulty,
 	})
 	if err != nil {
@@ -188,18 +189,24 @@ func (s *Server) serv(ctx context.Context, conn net.Conn) error {
 		return errors.Errorf("client welcome response: received wrong message (%s)", clientAnswerResponse)
 	}
 
-	ok := sha256.Check(
-		ctx,
-		clientAnswerResponse.Nonce,
-		clientAnswerResponse.Prefix,
-		clientAnswerResponse.Difficulty,
-	)
-
 	resp := protocol.ServerResultResponse{
 		Message: protocol.Message{
 			Type: protocol.MessageTypeServerResult,
 		},
 	}
+
+	var ok bool
+
+	fakeResponse := clientAnswerResponse.Prefix != sendingPrefix || clientAnswerResponse.Difficulty != s.config.difficulty
+	if !fakeResponse {
+		ok = sha256.Check(
+			ctx,
+			clientAnswerResponse.Nonce,
+			clientAnswerResponse.Prefix,
+			clientAnswerResponse.Difficulty,
+		)
+	}
+
 	switch {
 	case ok:
 		resp.Success = true
