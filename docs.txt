@@ -17,3 +17,20 @@ DDoS POW algorithm demands:
 Results: Due to lack of knowledge and time limitation, I selected SHA256 calculation cause it used in common projects.
 Assume that necessary researches already has been made, and it was selected as the best.
 TODO (KB): Additional researches for alternative algorithms.
+
+Open problems:
+1. Large botnet can cause computing or/and network large consumption even before POW checking.
+    Solutions:
+    1.1 Use 3-d party DDOS protection (e.g. Cloudflare)
+    1.2 Use local rate limiting
+2. Dummy client can be created, sending random nonce w/o real calculation. Computing resources for handling a single
+connection for client < for server => client can DDOS server.
+    Solutions:
+    1. Limited prefix pool (instead of generated) + prefix-nonce cache layer. (TBD, depends on difficulty)
+    2. ???
+
+Improvements:
+0. Test coverage
+1. Network ops abstraction. (e.g. using generics, messages unification, etc.)
+2. Durability benchmarks
+
