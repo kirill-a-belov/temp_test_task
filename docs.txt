@@ -31,6 +31,6 @@ connection for client < for server => client can DDOS server.
 
 Improvements:
 0. Test coverage
-1. Network ops abstraction. (e.g. using generics, messages unification, etc.)
+1. Network ops abstraction. (e.g. using generics, messages unification, etc.) - Done
 2. Durability benchmarks
 

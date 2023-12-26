@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"net"
 	"os"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"playGround/utils/network"
 	"playGround/utils/protocol"
 	"playGround/utils/sha256"
 	"playGround/utils/tracing"
@@ -108,62 +108,41 @@ func (c *Client) query(ctx context.Context) error {
 	}
 	defer conn.Close()
 
-	initialRequest, err := json.Marshal(protocol.ClientWelcomeRequest{
+	if err := network.Send(ctx, conn, protocol.ClientWelcomeRequest{
 		Message: protocol.Message{
 			Type: protocol.MessageTypeClientWelcome,
 		},
-	})
-	if err != nil {
-		return errors.Wrap(err, "marshalling initial request")
-	}
-	if _, err := conn.Write(initialRequest); err != nil {
+	}); err != nil {
 		return errors.Wrap(err, "sending initial request")
 	}
 
-	serverQuestion := make([]byte, 1024)
-	n, err := conn.Read(serverQuestion)
+	serverQuestionRequest, err := network.Receive[protocol.ServerQuestionRequest](ctx, conn)
 	if err != nil {
-		return errors.Wrap(err, "reading server question")
-	}
-	serverQuestion = serverQuestion[:n]
-	serverQuestionRequest := &protocol.ServerQuestionRequest{}
-	if err := json.Unmarshal(serverQuestion, serverQuestionRequest); err != nil {
-		return errors.Wrap(err, "unmarshalling server question request")
+		return errors.Wrap(err, "receiving server question request")
 	}
 	if serverQuestionRequest.Type != protocol.MessageTypeServerQuestion {
 		return errors.Errorf("server question requrest: received wrong message (%s)", serverQuestionRequest)
 	}
 
 	resultNonce := sha256.Find(ctx, serverQuestionRequest.Prefix, serverQuestionRequest.Difficulty)
-	answerResponse, err := json.Marshal(protocol.ClientAnswerResponse{
+	if err := network.Send(ctx, conn, protocol.ClientAnswerResponse{
 		Message: protocol.Message{
 			Type: protocol.MessageTypeClientAnswer,
 		},
 		Nonce:      resultNonce,
 		Prefix:     serverQuestionRequest.Prefix,
 		Difficulty: serverQuestionRequest.Difficulty,
-	})
-	if err != nil {
-		return errors.Wrap(err, "marshalling answer response")
-	}
-	if _, err := conn.Write(answerResponse); err != nil {
-		return errors.Wrap(err, "sending answer response")
+	}); err != nil {
+		return errors.Wrap(err, "sending client answer response")
 	}
 
-	serverResult := make([]byte, 1024)
-	n, err = conn.Read(serverResult)
+	serverResultResponse, err := network.Receive[protocol.ServerResultResponse](ctx, conn)
 	if err != nil {
-		return errors.Wrap(err, "reading server result")
-	}
-	serverResult = serverResult[:n]
-	serverResultResponse := &protocol.ServerResultResponse{}
-	if err := json.Unmarshal(serverResult, serverResultResponse); err != nil {
-		return errors.Wrap(err, "unmarshalling server result response")
+		return errors.Wrap(err, "receiving server result response")
 	}
 	if serverResultResponse.Type != protocol.MessageTypeServerResult {
 		return errors.Errorf("server result response: received wrong message (%s)", serverResultResponse)
 	}
-
 	if !serverResultResponse.Success {
 		log.Print("server error response",
 			" error: ", serverResultResponse.Payload,
